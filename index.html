@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CocoonNode Yield Optimizer</title>
+  <link rel="icon" href="/public/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col items-center">
+  <div class="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 py-4 px-6 flex items-center justify-between">
+    <div class="text-center flex-1 font-bold text-lg md:text-xl">
+      CocoonNode.com + @CocoonNode → FOR SALE
+      <span class="block mt-1 text-sm underline">DM @buildveloper or @CocoonNode</span>
+    </div>
+    <img src="/public/cocoon-logo.jpeg" alt="Logo" class="h-16 md:h-20 rounded-lg border-2 border-white/30" />
+  </div>
+
+  <div class="max-w-2xl w-full p-8 bg-gray-900 rounded-2xl shadow-2xl mt-10 mx-4">
+    <h1 class="text-4xl md:text-5xl font-bold text-center mb-8 bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+      Yield Optimizer
+    </h1>
+    <p class="text-center text-gray-400 mb-10 text-lg">
+      Enter your GPU → AI finds the best 4-hour window in next 48h for max $TON
+    </p>
+
+    <input type="text" id="gpu" placeholder="RTX 4090, A100, H100..." 
+           class="w-full p-5 rounded-xl bg-gray-800 text-white text-xl mb-8 focus:outline-none focus:ring-4 focus:ring-purple-600"/>
+
+    <button onclick="optimize()" 
+            class="w-full py-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-2xl hover:scale-105 transition">
+      Find My Best Window
+    </button>
+
+    <div id="result" class="mt-10 hidden">
+      <div class="p-8 bg-gray-800 rounded-xl border border-purple-600">
+        <h2 class="text-3xl font-bold mb-4" id="title"></h2>
+        <p id="earnings" class="text-4xl font-bold text-green-400 mb-4"></p>
+        <p id="time" class="text-2xl text-pink-400 mb-4"></p>
+        <p id="gas" class="text-gray-300"></p>
+      </div>
+    </div>
+
+    <div id="loading" class="hidden text-center mt-12">
+      <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-purple-600"></div>
+      <p class="mt-6 text-xl">Asking the AI oracle...</p>
+    </div>
+  </div>
+
+  <script>
+    async function optimize() {
+      const gpu = document.getElementById("gpu").value.trim();
+      if (!gpu) return alert("Enter GPU");
+
+      document.getElementById("loading").classList.remove("hidden");
+      document.getElementById("result").classList.add("hidden");
+
+      const res = await fetch("/api/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gpu })
+      });
+
+      const data = await res.json();
+
+      document.getElementById("loading").classList.add("hidden");
+      document.getElementById("result").classList.remove("hidden");
+      document.getElementById("title").textContent = `Best window for ${gpu.toUpperCase()}`;
+      document.getElementById("earnings").textContent = data.earnings;
+      document.getElementById("time").textContent = data.window;
+      document.getElementById("gas").textContent = data.gas;
+    }
+  </script>
+</body>
+</html>
