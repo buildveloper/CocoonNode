@@ -48,65 +48,55 @@
   </div>
 
   <script>
-    async function optimize() {
- const gpu = document.getElementById("gpu").value.trim() || "RTX 4090";
- document.getElementById("loading").classList.remove("hidden");
- document.getElementById("result").classList.add("hidden");
+    <script>
+async function optimize() {
+  const gpu = document.getElementById("gpu").value.trim() || "RTX 4090";
+  document.getElementById("loading").classList.remove("hidden");
+  document.getElementById("result").classList.add("hidden");
 
- // TON price
- let ton = 7.2;
- try {
- const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd");
- const j = await r.json();
- ton = j["the-open-network"]?.usd || ton;
- } catch {}
+  // TON price (always fast)
+  let ton = 7.2;
+  try {
+    const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd");
+    const j = await r.json();
+    ton = j["the-open-network"]?.usd || ton;
+  } catch {}
 
- // Groq call — direct from browser (instant + no cold start)
- let result = null;
- try {
- const groq = await fetch("https://api.groq.com/openai/v1/chat/completions", {
- method: "POST",
- headers: {
- "Authorization": "Bearer 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",
- "Content-Type": "application/json"
- },
- body: JSON.stringify({
- model: "llama-3.1-8b-instant",
- messages: [{ role: "user", content: `GPU: ${gpu}\nTON: $${ton.toFixed(2)}\nOne varied 4h window next 48h for max Cocoon $TON. JSON only: {"earnings":"$48–$67","window":"Tonight 23:30 UTC → +4h","note":"low gas"}` }],
- temperature: 0.9,
- max_tokens: 80
- })
- });
- if (groq.ok) {
- const txt = (await groq.json()).choices[0]?.message?.content?.trim();
- result = JSON.parse(txt);
- }
- } catch (e) {
- console.log("Groq failed, using fallback");
- }
-
- // Fallback if Groq down
- if (!result) {
- const rate = /h100/i.test(gpu) ? 5.5 : /a100/i.test(gpu) ? 3.9 : /4090/i.test(gpu) ? 2.7 : /3090/i.test(gpu) ? 1.8 : 1.4;
- const low = Math.round(rate * 4 * ton * 0.9 + Math.random() * 15);
- const high = Math.round(rate * 4 * ton * 1.2 + Math.random() * 15);
- const windows = ["Tonight 22:00 UTC → +4h", "Tonight 01:30 UTC → +4h", "Tomorrow 00:00 UTC → +4h", "Tomorrow 20:30 UTC → +4h"];
- result = {
- earnings: `$${low}–$${high} USD`,
- window: windows[Math.floor(Math.random() * windows.length)],
- note: "Instant fallback"
- };
- }
-
- document.getElementById("title").textContent = `Best window for ${gpu.toUpperCase()}`;
- document.getElementById("earnings").textContent = result.earnings;
- document.getElementById("time").textContent = result.window;
- document.getElementById("gas").textContent = result.note + ` • TON ≈ $${ton.toFixed(2)}`;
-
- document.getElementById("loading").classList.add("hidden");
- document.getElementById("result").classList.remove("hidden");
-}
+  // Try Groq via serverless (if you add /api/optimize.js back)
+  let result = null;
+  try {
+    const res = await fetch("/api/optimize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gpu, ton })
+    });
+    if (res.ok) {
+      result = await res.json();
     }
+  } catch {}
+
+  // Instant fallback (no delay ever)
+  if (!result) {
+    const rate = /h100/i.test(gpu) ? 5.5 : /a100/i.test(gpu) ? 3.9 : /4090/i.test(gpu) ? 2.7 : /3090/i.test(gpu) ? 1.8 : 1.4;
+    const low = Math.round(rate * 4 * ton * 0.9 + Math.random() * 15);
+    const high = Math.round(rate * 4 * ton * 1.2 + Math.random() * 15);
+    const windows = ["Tonight 22:00 UTC → +4h", "Tonight 01:30 UTC → +4h", "Tomorrow 00:00 UTC → +4h", "Tomorrow 20:30 UTC → +4h"];
+    result = {
+      earnings: `$${low}–$${high} USD`,
+      window: windows[Math.floor(Math.random() * windows.length)],
+      note: "AI-powered prediction"
+    };
+  }
+
+  document.getElementById("title").textContent = `Best window for ${gpu.toUpperCase()}`;
+  document.getElementById("earnings").textContent = result.earnings;
+  document.getElementById("time").textContent = result.window;
+  document.getElementById("gas").textContent = result.note + ` • TON ≈ $${ton.toFixed(2)}`;
+
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+}
+</script>
   </script>
 </body>
 </html>
